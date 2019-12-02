@@ -4,7 +4,7 @@ const key = 'userLogin'
 // 获取本地数据
 export const getUser = () => {
   // 加||的意思是当你获取的是空数据时返回一个空对象不会报错
-  return JSON.parse(window.localStorage.getItem(key || '{}'))
+  return JSON.parse(window.localStorage.getItem(key) || '{}')
 }
 // 添加本地数据
 export const addUser = (shuju) => {

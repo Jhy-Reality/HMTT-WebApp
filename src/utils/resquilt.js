@@ -17,11 +17,11 @@ import router from '@/router'
 // 处理大数据机制
 // 配置请求公共地址不能使用默认axios请求 防止项目接口会有两个后端提供数据
 // 而一个axios请求的配置不能访问两个后端数据 因此需要创建一个新的axios请求
-// 创建一个新的axios实例用来配置请求条件
+// 创建一个新的axios实例用来配置请求条件 axios.create({配置条件})
 const instance = axios.create({
   // 配置公共根地址
-  baseURL: 'http://ttapi.research.itcast.cn',
-  // 设置响应拦截器 一个函数就是一个处理，如果要对数据做多重处理就需要多个函数
+  baseURL: 'http://ttapi.research.itcast.cn/',
+  // 设置响应配置  一个函数就是一个处理，如果要对数据做多重处理就需要多个函数
   // data是原始的响应数据( json格式字符串 或者 null )
   transformResponse: [(data) => {
     // 有些请求返回data时为空而为空时不能进行jsonbigint转换否则会报错
@@ -52,9 +52,10 @@ instance.interceptors.request.use(config => {
 
 // 剥离无用的代码
 // 设置一个响应拦截器 获得响应的数据
-axios.interceptors.response.use(response => {
+instance.interceptors.response.use(response => {
   // 为了避免响应数据出错 使用try（容易出错的代码） catch(异常处理)
   try {
+    // console.log(response)
     // 我们需要使用的数据就是第二个data数据所以直接返回即可不需要返回整个response数据
     return response.data.data
   } catch (e) {
@@ -63,6 +64,15 @@ axios.interceptors.response.use(response => {
   }
   // 当token失效后发送的请求会响应失败 所以在响应出错时设置刷新token
 }, async error => {
+  // 配置跳转路由,利用query的传参方式可以在地址栏中获取到当前页面的地址
+  // 我们需要的是当前路由的地址而在组件中可以使用$route.path获取当前地址
+  // 但是我们现在在模块中 可以通过路由实例的属性 router.currentRoute === $route
+  const loginConfig = {
+    path: '/login',
+    query: {
+      redirectUrl: router.currentRoute.path
+    }
+  }
   // 利用try防止刷新失败报错的问题
   try {
     // 响应失败后会有错误的响应信息还可能会有其他信息
@@ -76,7 +86,7 @@ axios.interceptors.response.use(response => {
       // 判断用户信息是否存在token不存在是未登录 并且 是否存在refresh_token未存在无法刷新
       if (!user.token || !user.refresh_token) {
         // 如果未登录 或者 无法刷新token的时候使其跳转到登录页面
-        router.push('/login')
+        router.push(loginConfig)
         // 注意此时就不再向下执行代码了要返回一个error的promise对象阻止向下执行
         return Promise.reject(error)
       }
@@ -105,7 +115,7 @@ axios.interceptors.response.use(response => {
     }
   } catch (e) { // exception异常的意思
     // 如果刷新失败使其跳转到登录页面
-    router.push('/login')
+    router.push(loginConfig)
     return Promise.reject(e)
   }
   // 响应出错时必须返回一个错误的promise对象
